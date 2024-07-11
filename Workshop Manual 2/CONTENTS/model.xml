@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<model>
+	<modelname>CAMRY</modelname>
+	<modelcode>
+		<item>ACV30, 31 series</item>
+		<item>MCV30 series</item>
+	</modelcode>
+	<copyrightyear>2003-2004</copyrightyear>
+</model>

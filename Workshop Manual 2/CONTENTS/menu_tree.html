@@ -1,0 +1,173 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="./tree.css" type="text/css">
+<script src="sub.js"></script>
+<script>
+function init() {
+  let id = 0;
+  let linkid = 0;
+  let openFlag = [];
+  let ColorFlag = [];
+  let gNoArray = [];
+  let pImg = ["./images/plas1.gif", "./images/plas2.gif"];
+  let mImg = ["./images/minas1.gif", "./images/minas2.gif"];
+  let fImg = [
+    "./images/close_g.gif", "./images/open_g.gif",
+    "./images/close_y.gif", "./images/open_y.gif",
+    "./images/close_r.gif", "./images/open_r.gif",
+    "./images/close_p.gif", "./images/open_p.gif",
+    "./images/close_b.gif", "./images/open_b.gif",
+    "./images/close_lb.gif", "./images/open_lb.gif"
+  ];
+  let dImg = ["./images/tg3.gif", "./images/tg4.gif"];
+  let rImg = ["./images/tg1.gif", "./images/tg2.gif"];
+
+  const HomePath = "./";
+  const XmlFile = "pdf.xml";
+
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", HomePath + XmlFile, true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+      const xmldoc = xhr.responseXML;
+      const Root = xmldoc.documentElement;
+
+      document.write("<span class='TopItem' onclick='AllClose()'><font style='font-size:11pt;'>");
+      GetModelName();
+      document.write("</font></span><br>");
+      document.write(ParseTree(Root, ""));
+    }
+  };
+  xhr.send();
+}
+
+function ParseTree(poNode, PsTree) {
+  let gNo;
+  let Len = poNode.childNodes.length;
+  let Buf = "";
+  let CenterBuf = "";
+  let BeforeBuf = `<div id=${id}`;
+  if (id > 0) BeforeBuf += " style='display:none'";
+  BeforeBuf += ">";
+
+  for (let i = 0; i < Len; i++) {
+    if (poNode.childNodes[i].nodeName != "title" && poNode.childNodes[i].nodeName != "color") {
+      id++;
+      gNo = (i == Len - 1) ? 0 : 1;
+      gNoArray[id] = gNo;
+
+      let sTree = `${PsTree}<img src='${dImg[gNo]}' class='treeimg' align='top'>`;
+
+      let child = poNode.childNodes.item(i);
+      let title = child.childNodes[0].textContent;
+
+      if (child.childNodes.length > 1) {
+        ColorFlag[id] = (child.childNodes[1].nodeName == "color") ? child.childNodes[1].textContent : -1;
+      } else {
+        ColorFlag[id] = -1;
+      }
+
+      if (child.nodeName == "menu") {
+        openFlag[id] = false;
+        Buf = PsTree + `<span class='fd' onclick='ViewTree(${id},${gNo})' title='${title}'>
+                        <font class='treedata'>
+                          <img id='Node${id}' src='${pImg[gNo]}' class='treeimg' align='top'>`;
+        if (ColorFlag[id] != -1) {
+          Buf += `<img id='FD${id}' src='${fImg[ColorFlag[id] * 2]}' class='treeimg' align='top'>`;
+        }
+        Buf += `${title}</font></span><br>`;
+        if (child.hasChildNodes) {
+          let ChildBuf = ParseTree(child, sTree);
+          if (ChildBuf != "") {
+            CenterBuf += Buf + ChildBuf;
+          }
+        } else {
+          CenterBuf = Buf;
+        }
+      } else if (child.nodeName == "item") {
+        linkid++;
+        let url, sDatatype, sStDate, sEdDate;
+        for (let j = 1; j < child.childNodes.length; j++) {
+          let sNodeName = child.childNodes[j].nodeName;
+          let sNodeValue = child.childNodes[j].textContent;
+          if (sNodeName == "url") {
+            url = HomePath + sNodeValue;
+          } else if (sNodeName == "datatype") {
+            sDatatype = sNodeValue;
+          } else if (sNodeName == "stdate") {
+            sStDate = sNodeValue;
+          } else if (sNodeName == "eddate") {
+            sEdDate = sNodeValue;
+          }
+        }
+        CenterBuf += `${PsTree}<font class='treedata'><img src='${rImg[gNo]}' class='treeimg' align='top'>
+                      <a id='link${linkid}' onclick="linkclick('link${linkid}')" title='${title}' class='${sDatatype}' 
+                      href='${url}' target='pdf' class='pdf'>${title}</a></font><br>`;
+      }
+    }
+  }
+  if (CenterBuf != "") {
+    return BeforeBuf + CenterBuf + "</div>";
+  } else {
+    return "";
+  }
+}
+
+let sBefore = "";
+
+function linkclick(psObj) {
+  if (sBefore != psObj && sBefore != "") document.getElementById(sBefore).style.fontWeight = "normal";
+  document.getElementById(psObj).style.fontWeight = "bold";
+  sBefore = psObj;
+}
+
+function ViewTree(id, n) {
+  if (document.getElementById(id)) {
+    if (openFlag[id]) {
+      document.getElementById("Node" + id).src = pImg[n];
+      if (ColorFlag[id] != -1) {
+        document.getElementById("FD" + id).src = fImg[ColorFlag[id] * 2];
+      }
+      document.getElementById(id).style.display = "none";
+      openFlag[id] = false;
+    } else {
+      document.getElementById("Node" + id).src = mImg[n];
+      if (ColorFlag[id] != -1) {
+        document.getElementById("FD" + id).src = fImg[ColorFlag[id] * 2 + 1];
+      }
+      document.getElementById(id).style.display = "block";
+      openFlag[id] = true;
+    }
+  }
+}
+
+function AllClose() {
+  for (let i = 0; i < openFlag.length; i++) {
+    if (openFlag[i] == true) {
+      document.getElementById("Node" + i).src = pImg[gNoArray[i]];
+      if (ColorFlag[i] != -1) {
+        document.getElementById("FD" + i).src = fImg[ColorFlag[i] * 2];
+      }
+      document.getElementById(i).style.display = "none";
+      openFlag[i] = false;
+    }
+  }
+}
+</script>
+</head>
+<body class="tree">
+<div class="MenuArea">
+<FONT face="Arial">
+<TABLE>
+<TR><TD nowrap>
+<script type="text/javascript">
+  init();
+</script>
+</TD></TR>
+</TABLE>
+</FONT>
+</div>
+</body>
+</html>
