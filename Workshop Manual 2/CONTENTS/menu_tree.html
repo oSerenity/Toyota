@@ -1,173 +1,484 @@
-<!DOCTYPE HTML>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="./tree.css" type="text/css">
-<script src="sub.js"></script>
-<script>
-function init() {
-  let id = 0;
-  let linkid = 0;
-  let openFlag = [];
-  let ColorFlag = [];
-  let gNoArray = [];
-  let pImg = ["./images/plas1.gif", "./images/plas2.gif"];
-  let mImg = ["./images/minas1.gif", "./images/minas2.gif"];
-  let fImg = [
-    "./images/close_g.gif", "./images/open_g.gif",
-    "./images/close_y.gif", "./images/open_y.gif",
-    "./images/close_r.gif", "./images/open_r.gif",
-    "./images/close_p.gif", "./images/open_p.gif",
-    "./images/close_b.gif", "./images/open_b.gif",
-    "./images/close_lb.gif", "./images/open_lb.gif"
-  ];
-  let dImg = ["./images/tg3.gif", "./images/tg4.gif"];
-  let rImg = ["./images/tg1.gif", "./images/tg2.gif"];
-
-  const HomePath = "./";
-  const XmlFile = "pdf.xml";
-
-  const xhr = new XMLHttpRequest();
-  xhr.open("GET", HomePath + XmlFile, true);
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-      const xmldoc = xhr.responseXML;
-      const Root = xmldoc.documentElement;
-
-      document.write("<span class='TopItem' onclick='AllClose()'><font style='font-size:11pt;'>");
-      GetModelName();
-      document.write("</font></span><br>");
-      document.write(ParseTree(Root, ""));
-    }
-  };
-  xhr.send();
-}
-
-function ParseTree(poNode, PsTree) {
-  let gNo;
-  let Len = poNode.childNodes.length;
-  let Buf = "";
-  let CenterBuf = "";
-  let BeforeBuf = `<div id=${id}`;
-  if (id > 0) BeforeBuf += " style='display:none'";
-  BeforeBuf += ">";
-
-  for (let i = 0; i < Len; i++) {
-    if (poNode.childNodes[i].nodeName != "title" && poNode.childNodes[i].nodeName != "color") {
-      id++;
-      gNo = (i == Len - 1) ? 0 : 1;
-      gNoArray[id] = gNo;
-
-      let sTree = `${PsTree}<img src='${dImg[gNo]}' class='treeimg' align='top'>`;
-
-      let child = poNode.childNodes.item(i);
-      let title = child.childNodes[0].textContent;
-
-      if (child.childNodes.length > 1) {
-        ColorFlag[id] = (child.childNodes[1].nodeName == "color") ? child.childNodes[1].textContent : -1;
-      } else {
-        ColorFlag[id] = -1;
-      }
-
-      if (child.nodeName == "menu") {
-        openFlag[id] = false;
-        Buf = PsTree + `<span class='fd' onclick='ViewTree(${id},${gNo})' title='${title}'>
-                        <font class='treedata'>
-                          <img id='Node${id}' src='${pImg[gNo]}' class='treeimg' align='top'>`;
-        if (ColorFlag[id] != -1) {
-          Buf += `<img id='FD${id}' src='${fImg[ColorFlag[id] * 2]}' class='treeimg' align='top'>`;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMRY</title>
+    <style>
+        body {
+            color: #000000;
+            font-size: 10pt;
+            margin-top: 5pt;
+            margin-left: 5pt;
+            margin-bottom: 0pt;
+            margin-right: 0pt;
+            background-color: #CCD5DA;
         }
-        Buf += `${title}</font></span><br>`;
-        if (child.hasChildNodes) {
-          let ChildBuf = ParseTree(child, sTree);
-          if (ChildBuf != "") {
-            CenterBuf += Buf + ChildBuf;
-          }
-        } else {
-          CenterBuf = Buf;
+        body.blank {
+            background-color: #FFFFFF;
+            color: #000000;
         }
-      } else if (child.nodeName == "item") {
-        linkid++;
-        let url, sDatatype, sStDate, sEdDate;
-        for (let j = 1; j < child.childNodes.length; j++) {
-          let sNodeName = child.childNodes[j].nodeName;
-          let sNodeValue = child.childNodes[j].textContent;
-          if (sNodeName == "url") {
-            url = HomePath + sNodeValue;
-          } else if (sNodeName == "datatype") {
-            sDatatype = sNodeValue;
-          } else if (sNodeName == "stdate") {
-            sStDate = sNodeValue;
-          } else if (sNodeName == "eddate") {
-            sEdDate = sNodeValue;
-          }
+        ul, #menuTree {
+            list-style-type: none;
         }
-        CenterBuf += `${PsTree}<font class='treedata'><img src='${rImg[gNo]}' class='treeimg' align='top'>
-                      <a id='link${linkid}' onclick="linkclick('link${linkid}')" title='${title}' class='${sDatatype}' 
-                      href='${url}' target='pdf' class='pdf'>${title}</a></font><br>`;
-      }
-    }
-  }
-  if (CenterBuf != "") {
-    return BeforeBuf + CenterBuf + "</div>";
-  } else {
-    return "";
-  }
-}
+        #menuTree {
+            margin: 0;
+            padding: 0;
+        }
+        .caret {
+            cursor: pointer;
+            user-select: none; /* Prevent text selection */
+        }
+        .caret::before {
+            content: "\25B6";
+            color: black;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .caret-down::before {
+            transform: rotate(90deg);
+        }
+        .nested {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .title {
+            margin-left: 2px;
+            margin-top: 2px;
+            font-family: Arial;
+            font-size: small;
+            font-style: bold;
+        }
+    </style>
+    <script>
+        var gNoArray = [];
+        var ColorFlag = [];
+        var openFlag = [];
+        var id = 0;
+        var linkid = 0;
+        var dImg = ["", ""];  // Add appropriate image sources
+        var pImg = ["", ""];  // Add appropriate image sources
+        var mImg = ["", ""];  // Add appropriate image sources
+        var rImg = ["", ""];  // Add appropriate image sources
+        var fImg = ["", ""];  // Add appropriate image sources
+        var HomePath = "";    // Add appropriate path
 
-let sBefore = "";
+        function ParseTree(poNode, PsTree) {
+            var gNo;
+            var ItemCnt = 0;
+            var Len = poNode.childNodes.length; // 子ノード数の取得
+            var Buf = "";
+            var CenterBuf = "";
+            var BeforeBuf = "<div id=" + id;
+            if (id > 0) BeforeBuf += " style=display:none"; // 最初のノード以外は全て閉じた状態にする
+            BeforeBuf += ">"; // \n
 
-function linkclick(psObj) {
-  if (sBefore != psObj && sBefore != "") document.getElementById(sBefore).style.fontWeight = "normal";
-  document.getElementById(psObj).style.fontWeight = "bold";
-  sBefore = psObj;
-}
+            for (var i = 0; i < Len; i++) {
+                if (poNode.childNodes[i].nodeName != "title" && poNode.childNodes[i].nodeName != "color") {
+                    // 要素名が"title" or "color" 以外の場合の処理(menuの時)
+                    id++;
+                    if (i == Len - 1) gNo = 0; else gNo = 1; // 最後のノードの場合 gNo=0 それ以外 gNo=1
+                    gNoArray[id] = gNo;
 
-function ViewTree(id, n) {
-  if (document.getElementById(id)) {
-    if (openFlag[id]) {
-      document.getElementById("Node" + id).src = pImg[n];
-      if (ColorFlag[id] != -1) {
-        document.getElementById("FD" + id).src = fImg[ColorFlag[id] * 2];
-      }
-      document.getElementById(id).style.display = "none";
-      openFlag[id] = false;
-    } else {
-      document.getElementById("Node" + id).src = mImg[n];
-      if (ColorFlag[id] != -1) {
-        document.getElementById("FD" + id).src = fImg[ColorFlag[id] * 2 + 1];
-      }
-      document.getElementById(id).style.display = "block";
-      openFlag[id] = true;
-    }
-  }
-}
+                    var sTree = PsTree + "<img src='" + dImg[gNo] + "' class='treeimg' align='top'>"; // \n 最後のノードの時は' ' 最後では無い時は'｜'
 
-function AllClose() {
-  for (let i = 0; i < openFlag.length; i++) {
-    if (openFlag[i] == true) {
-      document.getElementById("Node" + i).src = pImg[gNoArray[i]];
-      if (ColorFlag[i] != -1) {
-        document.getElementById("FD" + i).src = fImg[ColorFlag[i] * 2];
-      }
-      document.getElementById(i).style.display = "none";
-      openFlag[i] = false;
-    }
-  }
-}
-</script>
+                    var child = poNode.childNodes[i]; //子ノードにカレントを移動(menu)
+                    var title = child.childNodes[0].text; //テキストノード"タイトル"の取得
+
+                    if (child.childNodes.length > 1) {
+                        if (child.childNodes[1].nodeName == "color") {
+                            ColorFlag[id] = child.childNodes[1].text;
+                        } else {
+                            ColorFlag[id] = -1;
+                        }
+                    } else {
+                        ColorFlag[id] = -1;
+                    }
+
+                    if (child.nodeName == "menu") {
+                        // 要素名が"menu"の場合の処理
+                        openFlag[id] = false;
+                        if (ColorFlag[id] == -1) {
+                            Buf = PsTree + "<span class='fd' onclick='ViewTree(" + id + "," + gNo + ")' title='" + title + "'><font class='treedata'><img id='Node" + id + "' src='" + pImg[gNo] + "' class='treeimg' align='top'>" + title + "</font></span><br>"; // \n
+                        } else {
+                            Buf = PsTree + "<span class='fd' onclick='ViewTree(" + id + "," + gNo + ")' title='" + title + "'><font class='treedata'><img id='Node" + id + "' src='" + pImg[gNo] + "' class='treeimg' align='top'><img id='FD" + id + "' src='" + fImg[ColorFlag[id] * 2] + "' class='treeimg'  align='top'>" + title + "</font></span><br>"; // \n
+                        }
+                        if (child.hasChildNodes) {
+                            var ChildBuf = ParseTree(child, sTree); //子ノードがある場合、再帰処理
+                            if (ChildBuf != "") {
+                                // 子ノードに表示対象データがあった場合
+                                CenterBuf += Buf + ChildBuf;
+                            }
+                        } else {
+                            CenterBuf = Buf;
+                        }
+                    } else if (child.nodeName == "item") {
+                        // 要素名が"item"の場合の処理
+                        //テキストノード"URL"の取得
+                        linkid++;
+                        var iNodeCnt = child.childNodes.length; // 子ノード数の取得
+                        var sNodeName = "";
+                        var sNodeValue = "";
+                        var sDatatype = "";
+                        var sStDate = "";
+                        var sEdDate = "";
+                        for (var j = 1; j < iNodeCnt; j++) {
+                            sNodeName = child.childNodes[j].nodeName; // ノード要素名の取得
+                            sNodeValue = child.childNodes[j].text; // ノードの値取得
+
+                            if (sNodeName == "url") {
+                                var url = HomePath + sNodeValue; // URLの取得
+                            } else if (sNodeName == "datatype") {
+                                sDatatype = sNodeValue; // データタイプの取得
+                            } else if (sNodeName == "stdate") {
+                                sStDate = sNodeValue; // 適応開始年月の取得
+                            } else if (sNodeName == "eddate") {
+                                sEdDate = sNodeValue; // 適応終了年月の取得
+                            }
+                        }
+                        if (sDatatype == "sb") {
+                            CenterBuf += PsTree + "<font class='treedata'><img src='" + rImg[gNo] + "' class='treeimg' align='top'><a id='link" + linkid + "' onclick=\"openPDFInFrame('" + url + "')\" title='" + title + "' class='" + sDatatype + "' href='javascript:void(0);' class='pdf'>" + title + "</a></font><br>"; // \n
+                        } else if (sDatatype == "sup") {
+                            CenterBuf += PsTree + "<font class='treedata'><img src='" + rImg[gNo] + "' class='treeimg' align='top'><a id='link" + linkid + "' onclick=\"openPDFInFrame('" + url + "')\" title='" + title + "' class='" + sDatatype + "' href='javascript:void(0);' class='pdf'>" + title + "</a></font><br>"; // \n
+                        } else {
+                            CenterBuf += PsTree + "<font class='treedata'><img src='" + rImg[gNo] + "' class='treeimg' align='top'><a id='link" + linkid + "' onclick=\"openPDFInFrame('" + url + "')\" title='" + title + "' href='javascript:void(0);' class='pdf'>" + title + "</a></font><br>"; // \n
+                        }
+                    }
+                } else {
+                    // 要素名が"title" or "color" の場合は何も処理しない
+                }
+            }
+            if (CenterBuf != "") {
+                return (BeforeBuf + CenterBuf + "</div>"); // \n
+            } else {
+                return (""); // \n
+            }
+        }
+
+        var sBefore = "";
+
+        function linkclick(psObj) {
+            if (sBefore != psObj && sBefore != "") document.all[sBefore].style.fontWeight = "normal";
+            document.all[psObj].style.fontWeight = "bold";
+            sBefore = psObj;
+        }
+
+        function ViewTree(id, n) {
+            if (document.getElementById(id)) {
+                if (openFlag[id]) {
+                    document.getElementById("Node" + id).src = pImg[n];
+                    if (ColorFlag[id] != -1) {
+                        document.getElementById("FD" + id).src = fImg[ColorFlag[id] * 2];
+                    }
+                    document.getElementById(id).style.display = "none";
+                    openFlag[id] = false;
+                } else {
+                    document.getElementById("Node" + id).src = mImg[n];
+                    if (ColorFlag[id] != -1) {
+                        document.getElementById("FD" + id).src = fImg[ColorFlag[id] * 2 + 1];
+                    }
+                    document.getElementById(id).style.display = "block";
+                    openFlag[id] = true;
+                }
+            }
+        }
+
+        function AllClose() {
+            var i = 0;
+
+            for (i = 0; i < openFlag.length; i++) {
+                if (openFlag[i] == true) {
+                    document.getElementById("Node" + i).src = pImg[gNoArray[i]];
+                    if (ColorFlag[i] != -1) {
+                        document.getElementById("FD" + i).src = fImg[ColorFlag[i] * 2];
+                    }
+                    document.getElementById(i).style.display = "none";
+                    openFlag[i] = false;
+                }
+            }
+        }
+
+        function finddisp() {
+            parent.location.href = "./menu2.html"
+        }
+
+        function getParamValue(sGetString, sParamName) {
+            var sValue = "";
+
+            if (sGetString.indexOf(sParamName) >= 0) {
+                sValue = sGetString.substring(sGetString.indexOf(sParamName) + sParamName.length);
+                if (sValue.indexOf("&") > 0) {
+                    sValue = sValue.substring(0, sValue.indexOf("&"));
+                }
+            }
+            return unescape(sValue);
+        }
+    </script>
 </head>
-<body class="tree">
-<div class="MenuArea">
-<FONT face="Arial">
-<TABLE>
-<TR><TD nowrap>
-<script type="text/javascript">
-  init();
+<body class="bod">
+
+<h2 class="title">CAMRY</h2>
+<ul id="menuTree">
+    <li><span class="caret">New Car Features</span>
+        <ul class="nested">
+            <li><span class="caret">New Model Outline</span>
+                <ul class="nested">
+                    <li><span class="caret">EXTERIOR APPEARANCE</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0002.pdf')">Front View</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0002.pdf')">Rear View</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0003.pdf')">CONCEPT</a></li>
+                    <li><span class="caret">EXTERIOR</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0004.pdf')">Front Design</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0005.pdf')">Side Design</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0006.pdf')">Rear Design</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">INTERIOR</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0007.pdf')">Interior Design</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0008.pdf')">Instrument Panel</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0008.pdf')">Center Cluster</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0009.pdf')">Center Console</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0009.pdf')">Trim &#38; Garnishes</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0010.pdf')">Combination Meter</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0010.pdf')">Steering Wheel &#38; Steering Column</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0011.pdf')">Seat</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">MAIN MECHANISM</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0012.pdf')">Engine</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0013.pdf')">Transaxle</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0014.pdf')">Suspension &#38; Brake</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">EQUIPMENT</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0015.pdf')">Wiper and Washer System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0015.pdf')">Sunshade</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0016.pdf')">Air Conditioner System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0017.pdf')">Navigation System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0018.pdf')">Audio System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0019.pdf')">Tire &#38; Disc Wheel</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0020.pdf')">UV (Ultraviolet) Reduction Glass</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0020.pdf')">Water Repellent Coating Glass</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0021.pdf')">Inside Rear View Mirror</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0021.pdf')">Moon Roof</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0022.pdf')">Engine Immobiliser System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0022.pdf')">Door Lock Control System</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">BODY</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0023.pdf')">Highly Rigid &#38; Lightweight Body</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0023.pdf')">Aerodynamics</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">SAFETY</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0024.pdf')">Passive Safety Equipment</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0026.pdf')">Active Safety Equipment</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">ENVIRONMENT</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0027.pdf')">Recyclable Parts</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0027.pdf')">Lead Reduction</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0028.pdf')">DIMENSION</a></li>
+                    <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0029.pdf')">EQUIPMENT LIST</a></li>
+                    <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0031.pdf')">MODEL CODE</a></li>
+                    <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_mo_0031.pdf')">MODEL LINE-UP</a></li>
+                </ul>
+            </li>
+            <li><span class="caret">ENGINE</span>
+                <ul class="nested">
+                    <li><span class="caret">1AZ-FE and 2AZ-FE Engines</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0002.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0005.pdf')">Features of 1AZ-FE and 2AZ-FE Engines</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0006.pdf')">Engine Proper</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0012.pdf')">Valve Mechanism</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0016.pdf')">Lubrication System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0018.pdf')">Cooling System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0020.pdf')">Intake and Exhaust System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0025.pdf')">Fuel System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0028.pdf')">Ignition System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0029.pdf')">Starting System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0031.pdf')">Serpentine Belt Drive System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0032.pdf')">Engine Control System</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">1MZ-FE Engine</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0047.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0048.pdf')">Features of 1MZ-FE Engine</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0049.pdf')">Engine Proper</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0054.pdf')">Valve Mechanism</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0058.pdf')">Lubrication System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0060.pdf')">Cooling System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0062.pdf')">Intake and Exhaust System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0066.pdf')">Fuel System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0068.pdf')">Ignition System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0068.pdf')">Starting System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_eg_0069.pdf')">Engine Control System</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><span class="caret">CHASSIS</span>
+                <ul class="nested">
+                    <li><span class="caret">CLUTCH</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0002.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0003.pdf')">Clutch Start System</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">E354 MANUAL TRANSAXLE</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0004.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0005.pdf')">Transmission Gear</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">U140E AND U241E AUTOMATIC TRANSAXLE</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0006.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0008.pdf')">Torque Converter</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0008.pdf')">Oil Pump</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0009.pdf')">Planetary Gear Unit</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0014.pdf')">Valve Body Unit</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0019.pdf')">Electronic Control System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0027.pdf')">Shift Control Mechanism</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">SUSPENSION AND AXLE</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0030.pdf')">Suspension</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0035.pdf')">Axle</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">DRIVE SHAFT</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0036.pdf')">Description</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">BRAKE</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0037.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0039.pdf')">ABS with EBD &#38; Brake Assist System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0048.pdf')">ABS with EBD &#38; Brake Assist &#38; TRC &#38; VSC System</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">STEERING</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0065.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0066.pdf')">Power Steering Vane Pump</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0068.pdf')">Tilt Steering</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ch_0069.pdf')">Energy Absorbing Mechanism</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><span class="caret">BODY</span>
+                <ul class="nested">
+                    <li><span class="caret">BODY STRUCTURE</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0002.pdf')">Lightweight and High Rigid Body</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0002.pdf')">Safety Feature</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0006.pdf')">Rust-Resistant Body</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0008.pdf')">Low Vibration and Low Noise Body</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0011.pdf')">Aerodynamics</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">ENHANCEMENT OF PRODUCT APPEAL</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0012.pdf')">Rear Seat</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0012.pdf')">Seat Belt</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_bo_0014.pdf')">Windshield Washer Nozzle</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><span class="caret">BODY ELECTRICAL</span>
+                <ul class="nested">
+                    <li><span class="caret">BODY ELECTRICAL SYSTEM CONTROL</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0002.pdf')">Multiplex Communication System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0004.pdf')">System Operation</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">LIGHTING</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0005.pdf')">Headlight and Taillight</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0006.pdf')">Daytime Running Light System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0006.pdf')">Automatic Light Control System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0006.pdf')">Light Auto Turn-Off System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0006.pdf')">Illuminated Entry System</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">METER</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0007.pdf')">Combination Meter</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">WIPER SYSTEM</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0009.pdf')">Raindrop Sensing Function</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">AIR CONDITIONER</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0011.pdf')">Description</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0016.pdf')">Constructioin and Operation</a></li>
+                        </ul>
+                    </li>
+                    <li><span class="caret">ACCESSORIES</span>
+                        <ul class="nested">
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0022.pdf')">Navigation System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0028.pdf')">Multi-Information Display</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0031.pdf')">Power Window System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0033.pdf')">Door Lock Control System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0035.pdf')">Wireless Door Lock Remote Control System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0038.pdf')">Engine Immobiliser System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0039.pdf')">SRS Airbag System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0043.pdf')">Cruise Control System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0045.pdf')">Power Seat</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0045.pdf')">Seat Heater</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0046.pdf')">Seat Belt Warning System</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0047.pdf')">Inside Rear View Mirror</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0049.pdf')">Outside Rear View Mirror</a></li>
+                            <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_be_0049.pdf')">Moon Roof</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><span class="caret">APPENDIX</span>
+                <ul class="nested">
+                    <li><a href="javascript:void(0);" onclick="openPDFInFrame('../ncf/ncf209e/m_ap_0002.pdf')">MAJOR TECHNICAL SPECIFICATIONS</a></li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+</ul>
+
+<script>
+    var toggler = document.getElementsByClassName("caret");
+    var i;
+
+    for (i = 0; i < toggler.length; i++) {
+        toggler[i].addEventListener("click", function() {
+            this.parentElement.querySelector(".nested").classList.toggle("active");
+            this.classList.toggle("caret-down");
+        });
+    }
 </script>
-</TD></TR>
-</TABLE>
-</FONT>
-</div>
+
 </body>
 </html>

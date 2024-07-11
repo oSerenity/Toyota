@@ -1,77 +1,65 @@
-<HTML>
-<HEAD><SCRIPT langurage="javascript">
-<!--
-
-function setbtnimage(status, PsBaseFile, PoObj){
-  if (status==0) {
-    document.images[PoObj].src='./images/' + PsBaseFile + '1.gif';
-  }else if (status==1){
-    document.images[PoObj].src='./images/' + PsBaseFile + '2.gif';
-  }else{
-    document.images[PoObj].src='./images/' + PsBaseFile + '3.gif';
-  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+body {
+  color:#000000;
+  font-size:10pt;
+  margin:0;
+  padding: 0;
+  background-color:#CCD5DA;
 }
--->
-</SCRIPT>
-<META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<META http-equiv="Content-Style-Type" content="text/css">
-<link rel=stylesheet type="text/css" href="disp.css">
-<SCRIPT language="JavaScript" src="sub.js"></SCRIPT>
-
-<script type="text/javascript">
-<!--
-GetTitleName();
-//-->
-</script>
-</HEAD>
-<BODY class="header">
-<TABLE height="100%" width="100%" border="0" cellpadding="0" cellspacing="0">
-  <TR><TD>
-    <TABLE border="0" width="100%" cellpadding="4" cellspacing="0">
-      <TBODY>
-        <TR>
-          <TD valign="top" align="left">
-          <TABLE border="0" cellpadding="0" cellspacing="0">
-            <TBODY>
-              <TR>
-                <TD><A href="javascript:history.back()" onmousedown="setbtnimage(2, 'back', 'back')" onmouseover="setbtnimage(1, 'back', 'back')" onmouseout="setbtnimage(0, 'back', 'back')" onmouseup="setbtnimage(1, 'back', 'back')"><IMG src="images/back1.gif" border="0" id="back"></A></TD>
-                <TD><A href="javascript:history.forward()" onmousedown="setbtnimage(2, 'forward', 'forward')" onmouseover="setbtnimage(1, 'forward', 'forward')" onmouseout="setbtnimage(0, 'forward', 'forward')" onmouseup="setbtnimage(1, 'forward', 'forward')"><IMG src="images/forward1.gif" border="0" id="forward"></A></TD>
-              </TR>
-            </TBODY>
-          </TABLE>
-          </TD>
-          <TD align="right" valign="bottom">
-          <TABLE border="0" cellpadding="0" cellspacing="0">
-            <TBODY>
-              <TR>
-                <TD class="sepa"></TD>
-              </TR>
-              <TR>
-                <TD>
-                <TABLE border="0" cellpadding="1" cellspacing="0">
-                  <TBODY>
-                    <TR>
-                      <TD class="titlebg"></TD>
-                      <TD class="titlebg"><FONT class="titlebg">OVERSEAS CUSTOMER SERVICE TECHNICAL DIVISION</FONT></TD>
-                      <TD class="titlebg"></TD>
-                    </TR>
-                  </TBODY>
-                </TABLE>
-                </TD>
-              </TR>
-              <TR>
-                <TD class="sepa"></TD>
-              </TR>
-            </TBODY>
-          </TABLE>
-          </TD>
-        </TR>
-      </TBODY>
-    </TABLE>
-  </TD></TR>
-  <TR>
-    <TD class="sepabtm"></TD>
-  </TR>
-</TABLE>
-</BODY>
-</HTML>
+        .top-bar {
+            background-color: #BBC7CD; /* Light gray background */
+            height: 30px; /* Adjust height as needed */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px; /* Adjust padding as needed */
+            border-bottom: 2px solid red; /* Red bottom border */
+            border-top: 0px solid red; /* Red top border */
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        .logo img {
+            height: 50px; /* Adjust height as needed */
+            margin-left: 20px; /* Adjust margin as needed */
+        }
+        .navigation {
+            display: flex;
+            align-items: center;
+            margin-left: 10px; /* Adjust margin to move closer to logo */
+        }
+        .navigation img {
+            height: 25px; /* Adjust height as needed */
+            margin: 0px; /* Reduced margin to move images closer to each other */
+        }
+        .division {
+            color: #990000;
+            font-family: Arial;
+            font-size: xx-small;
+            margin-top: 10px;
+            margin-right: -5px;
+            border-bottom: 1px solid red; /* Red bottom border */
+            border-top: 1px solid red; /* Red top border */
+            margin-left: auto; /* Push the division name to the far right */
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="logo">
+            <img src="images/logo.png" alt="Toyota Logo">
+        </div>
+        <div class="navigation">
+            <img src="images/back1.gif" alt="Left Arrow">
+            <img src="images/forward1.gif" alt="Right Arrow">
+        </div>
+        <div class="division">OVERSEAS CUSTOMER SERVICE TECHNICAL DIVISION</div>
+    </div>
+</body>
+</html>

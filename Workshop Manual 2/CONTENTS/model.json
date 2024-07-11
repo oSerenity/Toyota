@@ -1,0 +1,12 @@
+{
+	"model": {
+		"modelname": "CAMRY",
+		"modelcode": {
+			"item": [
+				"ACV30, 31 series",
+				"MCV30 series"
+			]
+		},
+		"copyrightyear": "2003-2004"
+	}
+}
