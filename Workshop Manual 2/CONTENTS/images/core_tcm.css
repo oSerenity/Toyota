@@ -14,7 +14,7 @@
 :root {
     --tcm-font: "Segoe UI", Roboto, "Helvetica Neue", Arial, Verdana, sans-serif;
     --tcm-accent: #cf0000;
-    --tcm-link: #9ba2a6;
+    --tcm-link: #56616a;
     --tcm-link-hover: #957d0f;
 }
 
@@ -162,13 +162,13 @@ TD.nav
 A:link
 {
     FONT-SIZE: 11px;
-    COLOR: #9ba2a6;
+    COLOR: #56616a;
     TEXT-DECORATION: none
 }
 A:visited
 {
     FONT-SIZE: 11px;
-    COLOR: #9ba2a6;
+    COLOR: #56616a;
     TEXT-DECORATION: none
 }
 A:hover
@@ -217,27 +217,27 @@ P.subnav
 .subnav
 {
     FONT-SIZE: 11px;
-    COLOR: #9ba2a6;
+    COLOR: #56616a;
     TEXT-DECORATION: none
 }
 .subnav_hidden
 {
     FONT-SIZE: 11px;
     VISIBILITY: hidden;
-    COLOR: #9ba2a6;
+    COLOR: #56616a;
     POSITION: absolute;
     TEXT-DECORATION: none
 }
 A.subnav:link
 {
     FONT-SIZE: 11px;
-    COLOR: #9ba2a6;
+    COLOR: #56616a;
     TEXT-DECORATION: none
 }
 A.subnav:visited
 {
     FONT-SIZE: 11px;
-    COLOR: #9ba2a6;
+    COLOR: #56616a;
     TEXT-DECORATION: none
 }
 A.subnav:hover
