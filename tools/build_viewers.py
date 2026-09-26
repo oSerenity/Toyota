@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Generate the viewer page (index.html) for each manual.
+"""Generate the site's single combined manual (index.html at the repository root).
 
-All three manuals share one frame-free viewer (assets/viewer.css, assets/viewer.js)
+Every manual on the site is merged into one tree, grouped by model:
+  2006 Camry: Repair Manual + Electrical Wiring Diagram
+  ACV30/31 & MCV30 series: the 13 manuals of Workshop Manual 2
+It uses one frame-free viewer (assets/viewer.css, assets/viewer.js)
 styled after Workshop Manual 2's original look: Toyota top bar with Back/Forward,
 a tree menu with +/- boxes and coloured book icons, the TREE CLOSE / width / RESET
 button bar, and a welcome screen. It adapts to phones (the menu becomes a drawer).
 
-The tree for each manual is read from that manual's existing table of contents:
+Each manual's part of the tree is read from its existing table of contents:
   - Workshop Manual 1 (2006 Repair Manual):  Workshop Manual 1/menu_camry.html
   - EWD (2006 Electrical Wiring Diagram):    EWD/menu.html
   - Workshop Manual 2 (ACV30/MCV30 library): Workshop Manual 2/CONTENTS/pdf.xml
@@ -15,6 +18,8 @@ Usage (from the repository root):
     python3 tools/build_viewers.py
 """
 import html
+import json
+import urllib.parse
 import os
 import re
 import shutil
@@ -117,15 +122,11 @@ class _LegacyMenuParser(HTMLParser):
             self.text.append(data)
 
 
-def read_legacy_menu(path, top_colour):
+def read_legacy_menu(path):
     parser = _LegacyMenuParser()
     with open(path, encoding="utf-8", errors="replace") as f:
         parser.feed(f.read())
-    root = parser.root
-    for child in root.children:
-        if not child.href:
-            child.colour = top_colour
-    return root
+    return parser.root
 
 
 def read_pdf_xml(path, manual_dir):
@@ -160,101 +161,116 @@ def esc(text):
     return html.escape(text or "", quote=True)
 
 
-def render(node, manual_dir, depth, problems):
-    pad = "    " * depth
+def rehome(node, manual_dir):
+    """Make every document href relative to the repository root (URL-encoded)."""
+    for child in node.children:
+        if child.href:
+            path = os.path.normpath(os.path.join(manual_dir, child.href))
+            child.href = urllib.parse.quote(os.path.relpath(path, ROOT).replace(os.sep, "/"))
+        rehome(child, manual_dir)
+    return node
+
+
+def render(node, depth, problems, open_levels=0):
+    pad = "  " * depth
     out = []
     kids = node.children
     for i, child in enumerate(kids):
         n = 1 if i == len(kids) - 1 else 2  # plas1/minas1 for the last child, as in the original
         title = esc(child.title)
         if child.href:
-            path = os.path.normpath(os.path.join(manual_dir, child.href.split("#")[0].split("?")[0]))
-            if not os.path.exists(path):
-                # The menu lists it but the PDF is not in the repository: show it, but not as a dead link.
+            if not os.path.exists(os.path.join(ROOT, urllib.parse.unquote(child.href))):
+                # Listed in the menu but the PDF is not in the repository: show it, not as a dead link.
                 problems.append(child.href)
-                out.append(f'{pad}<li><span class="missing" title="{title} (not included in this copy of the manual)">'
+                out.append(f'{pad}<li><span class="missing" title="Not included in this copy of the manual">'
                            f'{title} <em>(not included)</em></span></li>')
                 continue
             cls = child.kind if child.kind in DOC_TAGS else "pdf"
-            hint = f" ({DOC_TAGS[child.kind].lower()})" if child.kind in DOC_TAGS else ""
-            out.append(f'{pad}<li><a class="{cls}" href="{esc(child.href)}" target="_blank" rel="noopener" '
-                       f'title="{title}{hint}" data-doc>{title}</a></li>')
+            out.append(f'{pad}<li><a class="{cls}" href="{esc(child.href)}" data-doc>{title}</a></li>')
         else:
-            book = ""
-            if child.colour and os.path.exists(os.path.join(ASSETS_IMG, f"close_{child.colour}.gif")):
-                book = (f'<img src="../assets/img/close_{child.colour}.gif" data-open="../assets/img/open_{child.colour}.gif" '
-                        f'data-closed="../assets/img/close_{child.colour}.gif" width="24" height="18" alt="">')
-            out.append(f'{pad}<li><details><summary title="{title}">'
-                       f'<img src="../assets/img/plas{n}.gif" data-open="../assets/img/minas{n}.gif" '
-                       f'data-closed="../assets/img/plas{n}.gif" width="13" height="13" alt="">{book}'
-                       f'<span>{title}</span></summary>')
-            out.append(f"{pad}    <ul>")
-            out.extend(render(child, manual_dir, depth + 2, problems))
-            out.append(f"{pad}    </ul>")
-            out.append(f"{pad}</details></li>")
+            is_open = open_levels > 0
+            state = ("minas", "open") if is_open else ("plas", "close")
+            book = f'<img src="assets/img/{state[1]}_{child.colour}.gif" alt="">' if child.colour else ""
+            out.append(f'{pad}<li><details{" open" if is_open else ""}><summary title="{title}">'
+                       f'<img src="assets/img/{state[0]}{n}.gif" alt="">{book}<span>{title}</span></summary><ul>')
+            out.extend(render(child, depth + 1, problems, open_levels - 1))
+            out.append(f"{pad}</ul></details></li>")
     return out
 
 
-def facts(pairs):
-    return "".join(f"<dt>{esc(k)}</dt><dd>{v}</dd>" for k, v in pairs)
+def section(title, *children, colour=None):
+    node = Node(title, colour=colour)
+    node.children.extend(children)
+    return node
 
 
-MANUALS = [
-    {
-        "dir": "Workshop Manual 1",
-        "tree": lambda d: read_legacy_menu(os.path.join(d, "menu_camry.html"), "g"),
-        "TITLE": "2006 Camry Repair Manual",
-        "DESCRIPTION": "Toyota 2006 Camry repair manual: specifications, diagnostics and repair procedures.",
-        "BANNER": "2006 CAMRY &nbsp;·&nbsp; REPAIR MANUAL",
-        "SUBTITLE": "2006 · Repair Manual",
-        "WELCOME_TITLE": "2006 CAMRY Repair Manual",
-        "WELCOME_FACTS": facts([("Model year", "2006")]),
-        "COPYRIGHT": "Manual content © Toyota Motor Corporation.",
-    },
-    {
-        "dir": "EWD",
-        "tree": lambda d: read_legacy_menu(os.path.join(d, "menu.html"), "r"),
-        "TITLE": "2006 Camry Electrical Wiring Diagram",
-        "DESCRIPTION": "Toyota 2006 Camry electrical wiring diagram: system circuits, relay locations, routing, ground points and connectors.",
-        "BANNER": "2006 CAMRY &nbsp;·&nbsp; ELECTRICAL WIRING DIAGRAM",
-        "SUBTITLE": "2006 · Electrical Wiring Diagram",
-        "WELCOME_TITLE": "2006 CAMRY Electrical Wiring Diagram",
-        "WELCOME_FACTS": facts([("Model year", "2006")]),
-        "COPYRIGHT": "Manual content © Toyota Motor Corporation.",
-    },
-    {
-        "dir": "Workshop Manual 2",
-        "tree": lambda d: read_pdf_xml(os.path.join(d, "CONTENTS", "pdf.xml"), d),
-        "TITLE": "Camry ACV30/MCV30 Workshop Manual",
-        "DESCRIPTION": "Toyota Camry ACV30/31 and MCV30 series service library: repair manuals, wiring diagram, body repair and new car features.",
-        "BANNER": "OVERSEAS CUSTOMER SERVICE TECHNICAL DIVISION",
-        "SUBTITLE": "ACV30/31 &amp; MCV30 series",
-        "WELCOME_TITLE": "CAMRY PDF Manual",
-        "WELCOME_FACTS": facts([("Applicable models", "ACV30, 31 series<br>MCV30 series")]),
-        "COPYRIGHT": "Copyright © 2003-2004 Toyota Motor Corporation. All rights reserved.",
-    },
-]
+def build_tree():
+    wm1 = os.path.join(ROOT, "Workshop Manual 1")
+    ewd = os.path.join(ROOT, "EWD")
+    wm2 = os.path.join(ROOT, "Workshop Manual 2")
 
+    repair = rehome(read_legacy_menu(os.path.join(wm1, "menu_camry.html")), wm1)
+    wiring = rehome(read_legacy_menu(os.path.join(ewd, "menu.html")), ewd)
+    library = rehome(read_pdf_xml(os.path.join(wm2, "CONTENTS", "pdf.xml"), wm2), wm2)
+
+    return section("root",
+        section("2006 Camry",
+                section("Repair Manual", *repair.children, colour="g"),
+                section("Electrical Wiring Diagram", *wiring.children, colour="r")),
+        section("Earlier Camry: ACV30/MCV30", *library.children))
+
+
+FACTS = (
+    "<dt>2006 model year</dt><dd>Repair Manual, Electrical Wiring Diagram</dd>"
+    "<dt>ACV30, 31 &amp; MCV30 series</dt><dd>Built from August 2001: repair, engine and transmission manuals,<br>"
+    "wiring diagram, body repair, new car features, service data sheets</dd>"
+)
+
+PAGE = {
+    "TITLE": "Toyota Camry Service Manual",
+    "DESCRIPTION": "Toyota Camry service manual: 2006 Camry repair manual and wiring diagram, and the full service "
+                   "library for the ACV30/31 and MCV30-series Camry.",
+    "BANNER": "CAMRY &nbsp;·&nbsp; SERVICE MANUAL",
+    "SUBTITLE": "2006 &amp; ACV30/MCV30 series",
+    "WELCOME_TITLE": "CAMRY Service Manual",
+    "WELCOME_FACTS": FACTS,
+    "COPYRIGHT": "Manual content © Toyota Motor Corporation.",
+}
+
+# Old pages forward into the combined manual. A "#doc=" link to a document is
+# carried over, rewritten to the document's path from the repository root.
 REDIRECT = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
+    <title>Toyota Camry Service Manual</title>
     <meta http-equiv="refresh" content="0; url={target}">
-    <script>location.replace("{target}" + location.hash);</script>
+    <script>
+        (function () {{
+            var m = /(?:^#|&)doc=([^&]+)/.exec(location.hash), url = {target_js};
+            if (m) {{
+                var doc = decodeURIComponent(m[1]).replace(/^\.\//, "");
+                url += "#doc=" + encodeURIComponent({prefix_js} + doc);
+            }}
+            location.replace(url);
+        }})();
+    </script>
 </head>
 <body>
-    <p>This manual has moved. <a href="{target}">Open the {title}</a>.</p>
+    <p>The manuals have been merged. <a href="{target}">Open the Camry service manual</a>.</p>
 </body>
 </html>
 """
 
-# Old entry pages that now forward to the new viewer (kept so bookmarks keep working).
 REDIRECTS = [
-    ("EWD/camry_2006.html", "index.html", "2006 Camry Electrical Wiring Diagram"),
-    ("Workshop Manual 1/camry_2006.html", "index.html", "2006 Camry Repair Manual"),
-    ("Workshop Manual 2/CONTENTS/index.html", "../index.html", "Camry ACV30/MCV30 Workshop Manual"),
+    # (old page, path back to the root, prefix that makes its old #doc= paths root-relative)
+    ("EWD/index.html", "../index.html", "EWD/"),
+    ("EWD/camry_2006.html", "../index.html", "EWD/"),
+    ("Workshop Manual 1/index.html", "../index.html", "Workshop%20Manual%201/"),
+    ("Workshop Manual 1/camry_2006.html", "../index.html", "Workshop%20Manual%201/"),
+    ("Workshop Manual 2/index.html", "../index.html", "Workshop%20Manual%202/"),
+    ("Workshop Manual 2/CONTENTS/index.html", "../../index.html", "Workshop%20Manual%202/"),
 ]
 
 
@@ -264,28 +280,25 @@ def main():
         shutil.copy2(os.path.join(WM2_IMAGES, name), os.path.join(ASSETS_IMG, name))
 
     with open(os.path.join(TOOLS, "viewer.template.html"), encoding="utf-8") as f:
-        template = f.read()
+        page = f.read()
 
-    for manual in MANUALS:
-        manual_dir = os.path.join(ROOT, manual["dir"])
-        tree = manual["tree"](manual_dir)
-        problems = []
-        body = "\n".join(render(tree, manual_dir, 6, problems))
-        page = template.replace("{{TREE}}", body).replace("{{COUNT}}", f"{tree.count() - len(problems):,}")
-        for key, value in manual.items():
-            if key.isupper():
-                page = page.replace("{{" + key + "}}", value)
-        out = os.path.join(manual_dir, "index.html")
-        with open(out, "w", encoding="utf-8") as f:
-            f.write(page)
-        print(f"Wrote {os.path.relpath(out, ROOT)}: {len(tree.children)} top-level entries, {tree.count()} documents")
-        if problems:
-            print(f"  Note: {len(problems)} entries point at PDFs that are not in the repository; shown as 'not included':",
-                  *problems[:15], sep="\n    ")
+    tree = build_tree()
+    problems = []
+    body = "\n".join(render(tree, 3, problems, open_levels=1))
+    page = page.replace("{{TREE}}", body).replace("{{COUNT}}", f"{tree.count() - len(problems):,}")
+    for key, value in PAGE.items():
+        page = page.replace("{{" + key + "}}", value)
+    out = os.path.join(ROOT, "index.html")
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(page)
+    print(f"Wrote index.html: {tree.count() - len(problems)} documents "
+          f"({', '.join(f'{m.title}: {m.count()}' for m in tree.children)})")
+    if problems:
+        print(f"  Note: {len(problems)} entries point at PDFs that are not in the repository; shown as 'not included'.")
 
-    for path, target, title in REDIRECTS:
+    for path, target, prefix in REDIRECTS:
         with open(os.path.join(ROOT, path), "w", encoding="utf-8") as f:
-            f.write(REDIRECT.format(target=target, title=title))
+            f.write(REDIRECT.format(target=target, target_js=json.dumps(target), prefix_js=json.dumps(prefix)))
         print(f"Redirect {path} -> {target}")
 
 

@@ -297,6 +297,12 @@ body.tree-closed .treeopen-bar {
     display: none;
 }
 
+.tree > ul > li > details > summary {
+    font-weight: bold;
+    font-size: 9pt;
+    min-height: 22px;
+}
+
 .tree summary:hover span {
     color: #f00;
 }
@@ -576,6 +582,7 @@ body.showing-doc .copyright {
 
     .collapse-btn {
         display: inline-block;
+        grid-column: 2;
         padding: 6px 10px;
         border: 1px solid #8e9ca3;
         border-radius: 6px;
@@ -601,6 +608,11 @@ body.showing-doc .copyright {
 
     .tree summary {
         min-height: 40px;
+    }
+
+    .tree > ul > li > details > summary {
+        min-height: 46px;
+        font-size: 16px;
     }
 
     .tree li {

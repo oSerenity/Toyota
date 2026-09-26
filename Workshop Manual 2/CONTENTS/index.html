@@ -3,11 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camry ACV30/MCV30 Workshop Manual</title>
-    <meta http-equiv="refresh" content="0; url=../index.html">
-    <script>location.replace("../index.html" + location.hash);</script>
+    <title>Toyota Camry Service Manual</title>
+    <meta http-equiv="refresh" content="0; url=../../index.html">
+    <script>
+        (function () {
+            var m = /(?:^#|&)doc=([^&]+)/.exec(location.hash), url = "../../index.html";
+            if (m) {
+                var doc = decodeURIComponent(m[1]).replace(/^\.\//, "");
+                url += "#doc=" + encodeURIComponent("Workshop%20Manual%202/" + doc);
+            }
+            location.replace(url);
+        })();
+    </script>
 </head>
 <body>
-    <p>This manual has moved. <a href="../index.html">Open the Camry ACV30/MCV30 Workshop Manual</a>.</p>
+    <p>The manuals have been merged. <a href="../../index.html">Open the Camry service manual</a>.</p>
 </body>
 </html>
