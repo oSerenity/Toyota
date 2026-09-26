@@ -1,0 +1,658 @@
+/* viewer.css — shared manual viewer, styled after Workshop Manual 2's original look.
+   Desktop: top bar, tree menu on the left, document on the right.
+   Phones (< 768px): the menu becomes a slide-in drawer and documents open in the
+   phone's own PDF viewer. */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --menu-w: 260px;
+    --bar-h: 33px;
+    --top-h: 33px;
+    --bar-bg: #bbc7cd;
+    --tree-bg: #ccd5da;
+    --rule: #ff0000;
+    --ink: #000;
+    --muted: #3d4a52;
+    --focus: #cf0000;
+}
+
+html, body {
+    height: 100%;
+}
+
+body.viewer {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: #fff;
+    color: var(--ink);
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 10pt;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+}
+
+img {
+    border: 0;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- top bar */
+
+.topbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--top-h);
+    padding: 0 10px;
+    background: var(--bar-bg);
+    border-bottom: 2px solid var(--rule);
+    position: relative;
+    z-index: 30;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    line-height: 0;
+}
+
+.logo img {
+    height: 50px;
+    width: auto;
+    margin: -10px 0 -10px 20px;
+}
+
+.history {
+    display: flex;
+    align-items: center;
+}
+
+.img-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    line-height: 0;
+    cursor: pointer;
+}
+
+.division {
+    margin-left: auto;
+    margin-top: 10px;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    color: #990000;
+    font-size: xx-small;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.contents-btn {
+    display: none;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.layout {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.sidebar {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    width: var(--menu-w);
+    min-width: 0;
+    background: var(--tree-bg);
+}
+
+.splitter {
+    flex: none;
+    width: 5px;
+    margin-left: -2px;
+    margin-right: -3px;
+    cursor: col-resize;
+    position: relative;
+    z-index: 5;
+    background: transparent;
+    touch-action: none;
+}
+
+.splitter:hover,
+.splitter.dragging {
+    background: rgba(207, 0, 0, 0.35);
+}
+
+.stage {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+body.dragging {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.dragging .doc-frame {
+    pointer-events: none; /* keep the drag alive over the PDF */
+}
+
+/* Tree closed (TREE CLOSE button): hide the menu, show the TREE OPEN bar. */
+body.tree-closed .sidebar,
+body.tree-closed .splitter {
+    display: none;
+}
+
+.treeopen-bar {
+    flex: none;
+    display: none;
+    align-items: center;
+    height: var(--bar-h);
+    padding-left: 35px;
+    background: var(--bar-bg);
+    border-top: 1px solid var(--rule);
+}
+
+body.tree-closed .treeopen-bar {
+    display: flex;
+}
+
+/* ---------------------------------------------------------------- sidebar */
+
+.sidebar-head {
+    flex: none;
+    padding: 8px 6px 6px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.home-link {
+    display: inline-block;
+    margin-bottom: 6px;
+    color: var(--focus);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.home-link:hover {
+    text-decoration: underline;
+}
+
+.search {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #9aa5ab;
+    border-radius: 6px;
+    background: #fff;
+    color: #000;
+    font: 13px Arial, sans-serif;
+}
+
+.search:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 0;
+    border-color: transparent;
+}
+
+.search-status {
+    margin: 6px 2px 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.collapse-btn {
+    display: none;
+}
+
+.tree-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 0 6px 12px;
+    overscroll-behavior: contain;
+}
+
+.TopItem {
+    display: block;
+    margin: 6px 0 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    font: bold 14pt Arial, sans-serif;
+    cursor: pointer;
+}
+
+.TopItem small {
+    display: block;
+    color: var(--muted);
+    font-size: 7.5pt;
+    font-weight: normal;
+}
+
+/* Tree: original tree.css look — 8pt Arial, +/- boxes, coloured books. */
+.tree {
+    font-size: 8pt;
+    line-height: 1.35;
+}
+
+.tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 10px;
+}
+
+.tree > ul {
+    padding-left: 0;
+}
+
+.tree li {
+    white-space: nowrap;
+}
+
+.tree summary {
+    display: flex;
+    align-items: center;
+    min-height: 18px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.tree summary::-webkit-details-marker {
+    display: none;
+}
+
+.tree summary:hover span {
+    color: #f00;
+}
+
+.tree summary img {
+    flex: none;
+    margin-right: 2px;
+}
+
+.tree a,
+.results a {
+    display: inline-block;
+    padding: 1px 0 1px 15px;
+    text-decoration: none;
+}
+
+a.pdf, a.pdf:visited { color: #000; }
+a.sup, a.sup:visited { color: #009900; }
+a.sb, a.sb:visited { color: #333399; }
+
+.tree a:hover,
+.results a:hover {
+    color: #f00;
+}
+
+.tree .missing {
+    display: inline-block;
+    padding: 1px 0 1px 15px;
+    color: #6b767d;
+}
+
+.tree .missing em {
+    font-size: 0.9em;
+}
+
+a[aria-current="page"] {
+    font-weight: bold;
+}
+
+.results {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    font-size: 9pt;
+}
+
+.results li {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.results a {
+    padding-left: 0;
+    white-space: normal;
+}
+
+.crumb {
+    display: block;
+    color: #5b6670;
+    font-size: 8pt;
+}
+
+body.searching .tree,
+body.searching .TopItem {
+    display: none;
+}
+
+/* Button bar under the tree (menu_search.html in the original). */
+.toolbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: var(--bar-h);
+    padding: 3px 4px 0;
+    background: var(--bar-bg);
+    border-top: 1px solid var(--rule);
+    overflow: hidden;
+}
+
+.toolbar .reset {
+    margin-left: 4px;
+}
+
+/* ---------------------------------------------------------------- stage */
+
+.welcome {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12vh 24px 48px;
+    text-align: center;
+    background: #fff url("img/back_a.jpg") no-repeat right bottom;
+}
+
+.welcome h1 {
+    margin: 0 0 18px;
+    color: #cf0000;
+    font-size: 24px;
+}
+
+.welcome dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: center;
+    gap: 2px 6px;
+    margin: 0 0 16px;
+    text-align: left;
+}
+
+.welcome dt::after {
+    content: " :";
+    font-weight: bold;
+}
+
+.welcome dd {
+    margin: 0;
+}
+
+.welcome p {
+    margin: 0 0 12px;
+    max-width: 60ch;
+}
+
+.open-card {
+    margin-top: 12px;
+    padding: 14px 16px;
+    border: 1px solid #c3cdd2;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    max-width: 420px;
+}
+
+.open-card a {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    background: #cf0000;
+    color: #fff;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.only-touch {
+    display: none;
+}
+
+.copyright {
+    position: absolute;
+    right: 8px;
+    bottom: 4px;
+    margin: 0;
+    font-size: x-small;
+    pointer-events: none;
+}
+
+body.tree-closed .copyright {
+    bottom: calc(var(--bar-h) + 4px);
+}
+
+body.showing-doc .copyright {
+    display: none;
+}
+
+.doc-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: #525659;
+}
+
+.scrim {
+    display: none;
+}
+
+/* ---------------------------------------------------------------- phones */
+
+@media (max-width: 767px) {
+    :root {
+        --top-h: 48px;
+    }
+
+    .topbar {
+        gap: 6px;
+        padding: 0 6px;
+    }
+
+    .contents-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid #8e9ca3;
+        border-radius: 8px;
+        background: #e6ecef;
+        font-weight: bold;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .contents-btn .bars {
+        width: 16px;
+        height: 12px;
+        background: linear-gradient(#000 0 2px, transparent 2px 5px, #000 5px 7px, transparent 7px 10px, #000 10px 12px);
+    }
+
+    .logo img {
+        height: 40px;
+        margin: 0;
+    }
+
+    .history .img-btn {
+        min-width: 42px;
+        min-height: 42px;
+    }
+
+    .division {
+        display: none;
+    }
+
+    .splitter,
+    .toolbar,
+    .treeopen-bar {
+        display: none !important;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: var(--top-h);
+        bottom: 0;
+        left: 0;
+        z-index: 25;
+        width: min(88vw, 380px);
+        transform: translateX(-105%);
+        transition: transform 0.2s ease;
+        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25);
+        visibility: hidden;
+    }
+
+    body.drawer-open .sidebar {
+        transform: none;
+        visibility: visible;
+    }
+
+    body.tree-closed .sidebar {
+        display: flex;
+    }
+
+    .scrim {
+        position: fixed;
+        inset: var(--top-h) 0 0 0;
+        z-index: 20;
+        background: rgba(0, 0, 0, 0.35);
+    }
+
+    body.drawer-open .scrim {
+        display: block;
+    }
+
+    .sidebar-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 6px 8px;
+        padding: 10px;
+    }
+
+    .home-link {
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .collapse-btn {
+        display: inline-block;
+        padding: 6px 10px;
+        border: 1px solid #8e9ca3;
+        border-radius: 6px;
+        background: #e6ecef;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .search {
+        grid-column: 1 / -1;
+        padding: 10px 12px;
+        font-size: 16px; /* 16px stops iOS zooming into the field */
+    }
+
+    .search-status {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+
+    .tree {
+        font-size: 15px;
+    }
+
+    .tree summary {
+        min-height: 40px;
+    }
+
+    .tree li {
+        white-space: normal;
+    }
+
+    .tree a {
+        display: block;
+        padding: 9px 0 9px 17px;
+    }
+
+    .tree ul {
+        padding-left: 14px;
+    }
+
+    .results {
+        font-size: 15px;
+    }
+
+    .results a {
+        padding: 6px 0;
+    }
+
+    .crumb {
+        font-size: 12px;
+    }
+
+    .welcome {
+        padding: 32px 18px 72px;
+        background-size: 90% auto;
+    }
+
+    .welcome h1 {
+        font-size: 22px;
+    }
+
+    .only-desktop {
+        display: none;
+    }
+
+    .only-touch {
+        display: inline;
+    }
+
+    .copyright {
+        left: 8px;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar {
+        transition: none;
+    }
+}
