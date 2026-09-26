@@ -55,9 +55,10 @@ class Node:
         self.colour = colour  # book colour letter for sections, or None
         self.kind = kind      # "sup" / "sb" for documents
         self.children = []
+        self.extras = []      # [(label, href)] extra pages shown after a document, e.g. "p.2", "Description"
 
     def count(self):
-        return (1 if self.href else 0) + sum(c.count() for c in self.children)
+        return (1 if self.href else 0) + len(self.extras) + sum(c.count() for c in self.children)
 
 
 # --------------------------------------------------------------------------- readers
@@ -145,10 +146,34 @@ def read_pdf_xml(path, manual_dir):
                 node.children.append(section)
                 walk(child, section)
             elif child.tag == "item":
-                url = build_wm2_menu.resolve(child.findtext("url"))
-                href = os.path.relpath(os.path.normpath(os.path.join(contents, url)), manual_dir).replace(os.sep, "/")
+                raw = child.findtext("url").strip()
+                url = build_wm2_menu.resolve(raw)
                 kind = (child.findtext("datatype") or "").strip() or None
-                node.children.append(Node(child.findtext("title"), href=href, kind=kind))
+                doc = Node(child.findtext("title"), href=rel(url), kind=kind)
+                doc.extras = viewer_extras(raw)
+                node.children.append(doc)
+
+    def rel(path_from_contents):
+        return os.path.relpath(os.path.normpath(os.path.join(contents, path_from_contents)), manual_dir).replace(os.sep, "/")
+
+    def viewer_extras(raw):
+        """Pages the old wiring-diagram viewer showed with its own buttons."""
+        m = build_wm2_menu.VIEWER_URL.match(raw)
+        if not m:
+            return []
+        folder, view, kind, val = m.group("dir", "view", "kind", "val")
+        extras = []
+        if kind == "page":
+            # pages.xml: next="k" means the following k pages continue this one.
+            pages = ET.parse(os.path.join(contents, folder, "pages.xml")).getroot().findall("page")
+            numbers = [pg.get("no") for pg in pages]
+            if val in numbers:
+                i = numbers.index(val)
+                for n, pg in enumerate(pages[i + 1:i + 1 + int(pages[i].get("next") or 0)], start=2):
+                    extras.append((f"p.{n}", rel(f"{folder}{pg.get('no')}.pdf")))
+        elif view == "system" and os.path.exists(os.path.join(contents, folder, "text", f"{val}.pdf")):
+            extras.append(("Description", rel(f"{folder}text/{val}.pdf")))
+        return extras
 
     root = Node("root")
     walk(ET.parse(path).getroot(), root)
@@ -163,10 +188,14 @@ def esc(text):
 
 def rehome(node, manual_dir):
     """Make every document href relative to the repository root (URL-encoded)."""
+    def fix(href):
+        path = os.path.normpath(os.path.join(manual_dir, href))
+        return urllib.parse.quote(os.path.relpath(path, ROOT).replace(os.sep, "/"))
+
     for child in node.children:
         if child.href:
-            path = os.path.normpath(os.path.join(manual_dir, child.href))
-            child.href = urllib.parse.quote(os.path.relpath(path, ROOT).replace(os.sep, "/"))
+            child.href = fix(child.href)
+            child.extras = [(label, fix(href)) for label, href in child.extras]
         rehome(child, manual_dir)
     return node
 
@@ -186,7 +215,9 @@ def render(node, depth, problems, open_levels=0):
                            f'{title} <em>(not included)</em></span></li>')
                 continue
             cls = child.kind if child.kind in DOC_TAGS else "pdf"
-            out.append(f'{pad}<li><a class="{cls}" href="{esc(child.href)}" data-doc>{title}</a></li>')
+            extras = "".join(f' <a class="extra" href="{esc(href)}" data-doc data-title="{title} ({esc(label)})">{esc(label)}</a>'
+                             for label, href in child.extras)
+            out.append(f'{pad}<li><a class="{cls}" href="{esc(child.href)}" data-doc>{title}</a>{extras}</li>')
         else:
             is_open = open_levels > 0
             state = ("minas", "open") if is_open else ("plas", "close")
@@ -211,7 +242,15 @@ def build_tree():
 
     repair = rehome(read_legacy_menu(os.path.join(wm1, "menu_camry.html")), wm1)
     wiring = rehome(read_legacy_menu(os.path.join(ewd, "menu.html")), ewd)
-    library = rehome(read_pdf_xml(os.path.join(wm2, "CONTENTS", "pdf.xml"), wm2), wm2)
+    library = read_pdf_xml(os.path.join(wm2, "CONTENTS", "pdf.xml"), wm2)
+
+    # Connector face diagrams (by Toyota part number) that the old viewer only
+    # reached from its connector list; list them all in the wiring diagram.
+    connectors = sorted(f for f in os.listdir(os.path.join(wm2, "ewd", "connector")) if f.lower().endswith(".pdf"))
+    ewd_library = next(m for m in library.children if m.title == "Electrical Wiring Diagram")
+    ewd_library.children.append(section("CONNECTOR DIAGRAMS (by part number)",
+                                        *[Node(f[:-4], href=f"ewd/connector/{f}") for f in connectors]))
+    rehome(library, wm2)
 
     return section("root",
         section("2006 Camry",

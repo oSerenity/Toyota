@@ -169,6 +169,89 @@ body.dragging {
     user-select: none;
 }
 
+/* Bar above the document: where it is in the manual, previous / next, open in new tab. */
+.docbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 2px 6px;
+    background: #e6ecef;
+    border-bottom: 1px solid #bbc7cd;
+    font-size: 8pt;
+}
+
+.docbar-path {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--muted);
+}
+
+.docbar-path strong {
+    color: #000;
+}
+
+.docbar-btn {
+    flex: none;
+    padding: 2px 8px;
+    border: 1px solid #9aa5ab;
+    border-radius: 4px;
+    background: #fff;
+    color: #000;
+    font-size: 8pt;
+    line-height: 1.5;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.docbar-btn:hover {
+    border-color: var(--focus);
+    color: var(--focus);
+}
+
+.docbar-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+    border-color: #9aa5ab;
+    color: #000;
+}
+
+.recent {
+    margin-top: 18px;
+    text-align: left;
+    min-width: min(420px, 100%);
+    padding: 10px 14px;
+    border: 1px solid #c3cdd2;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.recent h2 {
+    margin: 0 0 6px;
+    font-size: 13px;
+}
+
+.recent ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.recent li {
+    margin: 3px 0;
+}
+
+.recent a {
+    color: #0033a0;
+}
+
+.recent .crumb {
+    display: block;
+}
+
 body.dragging .doc-frame {
     pointer-events: none; /* keep the drag alive over the PDF */
 }
@@ -322,6 +405,12 @@ body.tree-closed .treeopen-bar {
 a.pdf, a.pdf:visited { color: #000; }
 a.sup, a.sup:visited { color: #009900; }
 a.sb, a.sb:visited { color: #333399; }
+
+.tree a.extra {
+    padding-left: 5px;
+    color: #0033a0;
+    font-size: 7.5pt;
+}
 
 .tree a:hover,
 .results a:hover {
@@ -634,6 +723,16 @@ body.showing-doc .copyright {
 
     .results a {
         padding: 6px 0;
+    }
+
+    .tree a.extra {
+        display: inline-block;
+        padding: 9px 8px;
+        font-size: 13px;
+    }
+
+    .tree li:has(> a.extra) > a:first-child {
+        display: inline-block;
     }
 
     .crumb {

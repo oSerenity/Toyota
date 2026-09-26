@@ -5,7 +5,9 @@
 //   - Back / Forward, TREE CLOSE / TREE OPEN, narrower / wider, RESET buttons
 //     (with the original normal / hover / pressed button images)
 //   - +/- and book icons that open and close with their section
-//   - search, a draggable menu edge, and a remembered menu width
+//   - search (press / to jump to it, Enter opens the first match), a draggable
+//     menu edge, a remembered menu width, and recently viewed documents
+//   - a bar above each document showing where it is, with previous / next
 //   - one URL per document (#doc=…), so Back/Forward, reload and shared links work
 //   - on phones, a slide-in menu; documents open in the phone's own PDF viewer
 //
@@ -24,6 +26,11 @@
   var results = document.querySelector('.results');
   var splitter = document.querySelector('.splitter');
   var contentsBtn = document.querySelector('.contents-btn');
+  var docbar = document.querySelector('.docbar');
+  var docbarPath = document.querySelector('.docbar-path');
+  var recentBox = document.querySelector('.recent');
+  var RECENT_KEY = 'toyota-viewer-recent';
+  var RECENT_MAX = 8;
   var baseTitle = document.title;
 
   var MIN_WIDTH = 200;
@@ -145,6 +152,8 @@
     wider: function () { setWidth(currentWidth() + STEP, true); },
     'tree-close': function () { body.classList.add('tree-closed'); },
     'tree-open': function () { body.classList.remove('tree-closed'); },
+    'prev-doc': function () { step(-1); },
+    'next-doc': function () { step(1); },
     reset: collapseAll,
     contents: function () { setDrawer(!body.classList.contains('drawer-open')); }
   };
@@ -158,15 +167,24 @@
   });
 
   // ------------------------------------------------------------ documents
+  // Every document link in menu order (continuation pages and descriptions included).
   var links = Array.prototype.slice.call(tree.querySelectorAll('a[data-doc]'));
   var byHref = {};
+  var order = [];
   links.forEach(function (a) {
     var href = a.getAttribute('href');
-    if (!byHref[href]) byHref[href] = a;
+    if (!byHref[href]) {
+      byHref[href] = a;
+      order.push(href);
+    }
   });
 
   function textOf(el) {
     return (el ? el.textContent : '').replace(/\s+/g, ' ').trim();
+  }
+
+  function titleOf(a) {
+    return a ? (a.getAttribute('data-title') || textOf(a)) : '';
   }
 
   function breadcrumb(a) {
@@ -203,13 +221,16 @@
   function show(reveal) {
     var href = docFromHash();
     var link = href && byHref[href];
-    var title = link ? textOf(link) : href;
+    var title = link ? titleOf(link) : href;
+    if (link) remember(href);
+    renderRecent();
     document.title = title ? title + ' — ' + baseTitle : baseTitle;
     markCurrent(href, reveal);
 
     if (href && canShowInline()) {
       welcome.hidden = true;
       frame.hidden = false;
+      updateDocbar(href, title);
       body.classList.add('showing-doc');
       var url = new URL(href, location.href).href;
       // replace() keeps the frame out of the history; the #doc= hash is the history.
@@ -220,6 +241,7 @@
 
     body.classList.remove('showing-doc');
     frame.hidden = true;
+    docbar.hidden = true;
     welcome.hidden = false;
     if (href) {
       openCard.hidden = false;
@@ -229,6 +251,68 @@
     } else {
       openCard.hidden = true;
     }
+  }
+
+  function updateDocbar(href, title) {
+    var link = byHref[href];
+    var i = order.indexOf(href);
+    docbarPath.textContent = '';
+    var crumb = link ? breadcrumb(link) : '';
+    if (crumb) docbarPath.appendChild(document.createTextNode(crumb + ' › '));
+    var strong = document.createElement('strong');
+    strong.textContent = title;
+    docbarPath.appendChild(strong);
+    docbarPath.title = (crumb ? crumb + ' › ' : '') + title;
+    docbar.querySelector('[data-action="prev-doc"]').disabled = i <= 0;
+    docbar.querySelector('[data-action="next-doc"]').disabled = i < 0 || i >= order.length - 1;
+    docbar.querySelector('.docbar-open').href = href;
+    docbar.hidden = false;
+  }
+
+  // Previous / next document in menu order.
+  function step(delta) {
+    var i = order.indexOf(docFromHash());
+    var next = order[i + delta];
+    if (i >= 0 && next) openDoc(next);
+  }
+
+  // ------------------------------------------------------------ recently viewed
+  function recentList() {
+    try {
+      var list = JSON.parse(storageGet(RECENT_KEY) || '[]');
+      return Array.isArray(list) ? list.filter(function (h) { return byHref[h]; }) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function remember(href) {
+    var list = recentList().filter(function (h) { return h !== href; });
+    list.unshift(href);
+    storageSet(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)));
+  }
+
+  function renderRecent() {
+    var list = recentList();
+    var ol = recentBox.querySelector('ol');
+    ol.textContent = '';
+    list.forEach(function (href) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = href;
+      a.setAttribute('data-doc', '');
+      a.textContent = titleOf(byHref[href]);
+      li.appendChild(a);
+      var crumb = breadcrumb(byHref[href]);
+      if (crumb) {
+        var span = document.createElement('span');
+        span.className = 'crumb';
+        span.textContent = crumb;
+        li.appendChild(span);
+      }
+      ol.appendChild(li);
+    });
+    recentBox.hidden = !list.length;
   }
 
   function openDoc(href) {
@@ -256,7 +340,7 @@
 
   // ------------------------------------------------------------ search
   var MAX_RESULTS = 200;
-  var index = links.map(function (a) {
+  var index = links.filter(function (a) { return !a.classList.contains('extra'); }).map(function (a) {
     var crumb = breadcrumb(a);
     return { link: a, crumb: crumb, haystack: (textOf(a) + ' ' + crumb).toLowerCase() };
   });
@@ -299,6 +383,27 @@
       event.stopPropagation();
       search.value = '';
       runSearch();
+    }
+  });
+
+  search.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter') return;
+    var first = results.querySelector('a[data-doc]');
+    if (first) {
+      event.preventDefault();
+      first.click();
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    var t = event.target;
+    var typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      if (phone.matches) setDrawer(true);
+      body.classList.remove('tree-closed');
+      search.focus();
+      search.select();
     }
   });
 

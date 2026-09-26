@@ -26,7 +26,7 @@
         <aside class="sidebar" id="sidebar" aria-label="Contents">
             <div class="sidebar-head" role="search">
                 <button type="button" class="collapse-btn" data-action="reset">Collapse all</button>
-                <input type="search" class="search" placeholder="Search this manual…" aria-label="Search this manual" autocomplete="off">
+                <input type="search" class="search" placeholder="Search all manuals…  ( / )" aria-label="Search all manuals" autocomplete="off">
                 <p class="search-status" aria-live="polite" hidden></p>
             </div>
             <div class="tree-scroll">
@@ -52,12 +52,22 @@
                 <h1>{{WELCOME_TITLE}}</h1>
                 <dl>{{WELCOME_FACTS}}</dl>
                 <p><span class="only-desktop">Click the desired item from the menu on the left, or search all manuals at once.</span><span class="only-touch">Tap <b>Contents</b> to browse the manual. Documents open in your phone's PDF viewer.</span></p>
+                <section class="recent" hidden>
+                    <h2>Recently viewed</h2>
+                    <ol></ol>
+                </section>
                 <div class="open-card" hidden>
                     <div>Selected document:</div>
                     <strong class="open-title"></strong><br>
                     <a href="#" target="_blank" rel="noopener">Open PDF</a>
                 </div>
             </section>
+            <div class="docbar" hidden>
+                <button type="button" class="docbar-btn" data-action="prev-doc" title="Previous document" aria-label="Previous document">&#9664;</button>
+                <nav class="docbar-path" aria-label="Current document"></nav>
+                <button type="button" class="docbar-btn" data-action="next-doc" title="Next document" aria-label="Next document">&#9654;</button>
+                <a class="docbar-btn docbar-open" href="#" target="_blank" rel="noopener" title="Open the PDF in a new tab">Open ↗</a>
+            </div>
             <iframe class="doc-frame" name="doc" title="Document viewer" hidden></iframe>
             <div class="treeopen-bar">
                 <button type="button" class="img-btn" data-action="tree-open" data-btn title="Show the menu"><img src="assets/img/treeopen1.gif" width="117" height="23" alt="Tree open"></button>
