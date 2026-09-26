@@ -1,12 +1,14 @@
-<HTML>
-<HEAD>
-<META http-equiv="Content-Type" content="text/html; charset=iso-8859-1" charset="iso-8859-1">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <META http-equiv="Content-Style-Type" content="text/css">
 <link rel=stylesheet type="text/css" href="disp.css">
 <SCRIPT language="JavaScript" src="sub.js"></SCRIPT>
 <SCRIPT type="text/javascript">
 function framesetsize(num,size){
-  var o=parent.parent.document.all.tags("frameset")[num];
+  var o=parent.parent.document.getElementsByTagName("frameset")[num];
   var colrow = o.getAttribute("cols")?"cols":"rows";
   o.setAttribute(colrow,size);
 }
@@ -23,7 +25,7 @@ function frameopen(){
 }
 
 function frameresize(num,addsize) {
-  var o=parent.parent.document.all.tags("frameset")[num];
+  var o=parent.parent.document.getElementsByTagName("frameset")[num];
   var colrow = o.getAttribute("cols")?"cols":"rows";
   var nowsize = o.getAttribute(colrow).split(",", 1);
   nowsize = parseInt(nowsize) + addsize;
@@ -34,13 +36,13 @@ function frameresize(num,addsize) {
 
 }
 function framesetsizewidth(num,size){
-  var o=parent.parent.document.all.tags("frameset")[num];
+  var o=parent.parent.document.getElementsByTagName("frameset")[num];
   var colrow = o.getAttribute("cols")?"cols":"rows";
   o.setAttribute(colrow,size);
 }
 
 function frameresizewidth(num, addsize) {
-  var o=parent.parent.document.all.tags("frameset")[num];
+  var o=parent.parent.document.getElementsByTagName("frameset")[num];
   var colrow = o.getAttribute("cols")?"cols":"rows";
   var nowsize = o.getAttribute(colrow).split(",", 1);
   nowsize = parseInt(nowsize) + addsize;
