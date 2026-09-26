@@ -48,7 +48,19 @@ body {
             border-top: 1px solid red; /* Red top border */
             margin-left: auto; /* Push the division name to the far right */
         }
+        .navigation a {
+            display: flex;
+            line-height: 0;
+        }
     </style>
+    <title>CAMRY</title>
+    <script>
+        // Swap a button image between its normal (1), hover (2) and pressed (3) states.
+        function setbtnimage(status, base, id) {
+            var img = document.getElementById(id);
+            if (img) img.src = "./images/" + base + (status === 0 ? "1" : status === 1 ? "2" : "3") + ".gif";
+        }
+    </script>
 </head>
 <body>
     <div class="top-bar">
@@ -56,8 +68,8 @@ body {
             <img src="images/logo.png" alt="Toyota Logo">
         </div>
         <div class="navigation">
-            <img src="images/back1.gif" alt="Left Arrow">
-            <img src="images/forward1.gif" alt="Right Arrow">
+            <a href="javascript:history.back()" title="Back" onmousedown="setbtnimage(2,'back','back')" onmouseover="setbtnimage(1,'back','back')" onmouseout="setbtnimage(0,'back','back')" onmouseup="setbtnimage(1,'back','back')"><img src="images/back1.gif" id="back" alt="Back"></a>
+            <a href="javascript:history.forward()" title="Forward" onmousedown="setbtnimage(2,'forward','forward')" onmouseover="setbtnimage(1,'forward','forward')" onmouseout="setbtnimage(0,'forward','forward')" onmouseup="setbtnimage(1,'forward','forward')"><img src="images/forward1.gif" id="forward" alt="Forward"></a>
         </div>
         <div class="division">OVERSEAS CUSTOMER SERVICE TECHNICAL DIVISION</div>
     </div>

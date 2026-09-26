@@ -7,51 +7,49 @@
 <link rel=stylesheet type="text/css" href="disp.css">
 <SCRIPT language="JavaScript" src="sub.js"></SCRIPT>
 <SCRIPT type="text/javascript">
-function framesetsize(num,size){
-  var o=parent.parent.document.getElementsByTagName("frameset")[num];
-  var colrow = o.getAttribute("cols")?"cols":"rows";
-  o.setAttribute(colrow,size);
+// The frame layout lives in index3.html; its framesets are found by id, so these
+// buttons keep working if the layout changes.
+var MIN_WIDTH = 200;
+var DEFAULT_WIDTH = 260;
+var lastWidth = DEFAULT_WIDTH;
+
+function layout(id) {
+  return parent.document.getElementById(id);
 }
 
-function frameclose(){
-  framesetsize(4, '*,33');
-  framesetsizewidth(1, "0,*");
-  framesetsizewidth(2, "0,*");
-}
-function frameopen(){
-  framesetsize(4, '*,0');
-  framesetsizewidth(1, "260,*");
-  framesetsizewidth(2, "260,*");
+function menuWidth() {
+  var cols = layout("fsColumns");
+  return cols ? parseInt(cols.getAttribute("cols"), 10) || 0 : 0;
 }
 
-function frameresize(num,addsize) {
-  var o=parent.parent.document.getElementsByTagName("frameset")[num];
-  var colrow = o.getAttribute("cols")?"cols":"rows";
-  var nowsize = o.getAttribute(colrow).split(",", 1);
-  nowsize = parseInt(nowsize) + addsize;
-  if (nowsize < 260) {
-	nowsize = 260;
-  }
-  framesetsize(num, nowsize.toString() + ",*");
-
-}
-function framesetsizewidth(num,size){
-  var o=parent.parent.document.getElementsByTagName("frameset")[num];
-  var colrow = o.getAttribute("cols")?"cols":"rows";
-  o.setAttribute(colrow,size);
+function setMenuWidth(width) {
+  var cols = layout("fsColumns");
+  if (cols) cols.setAttribute("cols", width + ",*");
 }
 
-function frameresizewidth(num, addsize) {
-  var o=parent.parent.document.getElementsByTagName("frameset")[num];
-  var colrow = o.getAttribute("cols")?"cols":"rows";
-  var nowsize = o.getAttribute(colrow).split(",", 1);
-  nowsize = parseInt(nowsize) + addsize;
-  if (nowsize < 260) {
-	nowsize = 260;
-  }
-  framesetsizewidth(num, nowsize.toString() + ",*");
-
+// TREE CLOSE: hide the menu column and show the TREE OPEN bar under the viewer.
+function frameclose() {
+  if (menuWidth() > 0) lastWidth = menuWidth();
+  setMenuWidth(0);
+  var right = layout("fsRight");
+  if (right) right.setAttribute("rows", "*,33");
 }
+
+// TREE OPEN (frameopen.html): bring the menu back at its previous width.
+function frameopen() {
+  setMenuWidth(lastWidth || DEFAULT_WIDTH);
+  var right = layout("fsRight");
+  if (right) right.setAttribute("rows", "*,0");
+}
+
+// Narrower / wider buttons.
+function frameresizewidth(addsize) {
+  var max = Math.max(MIN_WIDTH, Math.round(parent.innerWidth * 0.7));
+  var width = Math.min(max, Math.max(MIN_WIDTH, menuWidth() + addsize));
+  lastWidth = width;
+  setMenuWidth(width);
+}
+
 function setbtnimage(status, PsBaseFile, PoObj){
   if (status==0) {
 	document.images[PoObj].src='./images/' + PsBaseFile + '1.gif';
@@ -84,9 +82,9 @@ GetTitleName();
           </TR>
           <TR>
             <TD width="4"></TD>
-            <TD nowrap valign="top"><A href="javascript:javascript:frameresizewidth(1,-50);frameresizewidth(2,-50)" onmousedown="setbtnimage(2,'widthdown','widthdown')" onmouseover="setbtnimage(1,'widthdown','widthdown')" onmouseout="setbtnimage(0,'widthdown','widthdown')" onmouseup="setbtnimage(1,'widthdown','widthdown')"><IMG src="images/widthdown1.gif" border="0" id="widthdown"></A> <A href="javascript:frameclose()" onmousedown="setbtnimage(2,'treeclose','treeclose')" onmouseover="setbtnimage(1,'treeclose','treeclose')" onmouseout="setbtnimage(0,'treeclose','treeclose')" onmouseup="setbtnimage(1,'treeclose','treeclose')"><IMG src="images/treeclose1.gif" border="0" id="treeclose"></A> <A href="javascript:frameresizewidth(1,+50);frameresizewidth(2,+50)" onmousedown="setbtnimage(2,'widthup','widthup')" onmouseover="setbtnimage(1,'widthup','widthup')" onmouseout="setbtnimage(0,'widthup','widthup')" onmouseup="setbtnimage(1,'widthup','widthup')"><IMG src="images/widthup1.gif" border="0" id="widthup"></A></TD>
+            <TD nowrap valign="top"><A href="javascript:frameresizewidth(-50)" title="Narrower menu" onmousedown="setbtnimage(2,'widthdown','widthdown')" onmouseover="setbtnimage(1,'widthdown','widthdown')" onmouseout="setbtnimage(0,'widthdown','widthdown')" onmouseup="setbtnimage(1,'widthdown','widthdown')"><IMG src="images/widthdown1.gif" border="0" id="widthdown" alt="Narrower"></A> <A href="javascript:frameclose()" title="Hide the menu" onmousedown="setbtnimage(2,'treeclose','treeclose')" onmouseover="setbtnimage(1,'treeclose','treeclose')" onmouseout="setbtnimage(0,'treeclose','treeclose')" onmouseup="setbtnimage(1,'treeclose','treeclose')"><IMG src="images/treeclose1.gif" border="0" id="treeclose" alt="Tree close"></A> <A href="javascript:frameresizewidth(50)" title="Wider menu" onmousedown="setbtnimage(2,'widthup','widthup')" onmouseover="setbtnimage(1,'widthup','widthup')" onmouseout="setbtnimage(0,'widthup','widthup')" onmouseup="setbtnimage(1,'widthup','widthup')"><IMG src="images/widthup1.gif" border="0" id="widthup" alt="Wider"></A></TD>
             <TD width="4"></TD>
-            <TD nowrap valign="top"><A href="javascript:parent.menu_tree.AllClose()" onmousedown="setbtnimage(2,'reset','reset')" onmouseover="setbtnimage(1,'reset','reset')" onmouseout="setbtnimage(0,'reset','reset')" onmouseup="setbtnimage(1,'reset','reset')"><IMG src="images/reset1.gif" border="0" id="reset"></A></TD>
+            <TD nowrap valign="top"><A href="javascript:parent.frames['menu_tree'].AllClose()" title="Close all sections" onmousedown="setbtnimage(2,'reset','reset')" onmouseover="setbtnimage(1,'reset','reset')" onmouseout="setbtnimage(0,'reset','reset')" onmouseup="setbtnimage(1,'reset','reset')"><IMG src="images/reset1.gif" border="0" id="reset" alt="Reset"></A></TD>
           </TR>
         </TBODY>
       </TABLE>

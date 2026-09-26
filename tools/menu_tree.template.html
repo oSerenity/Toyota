@@ -7,88 +7,87 @@
     <title>Camry ACV30/MCV30 — Contents</title>
     <script src="../../assets/menu-search.js" data-home="../../index.html" defer></script>
     <style>
+        /* Recreates the original menu's look (tree.css): 8pt Arial, +/- boxes and coloured book icons. */
         *, *::before, *::after {
             box-sizing: border-box;
         }
         body {
             margin: 0;
-            padding: 0 8px 16px;
+            padding: 0 6px 16px;
             background-color: #ccd5da;
             color: #000;
-            font: 13px/1.45 Arial, "Helvetica Neue", sans-serif;
+            font-family: Arial, "Helvetica Neue", sans-serif;
+            font-size: 8pt;
+            line-height: 1.35;
         }
-        .title {
-            margin: 10px 2px 6px;
-            font-size: 15px;
+        .TopItem {
+            display: block;
+            text-align: left;
+            margin: 6px 0 4px;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: #000;
+            font: bold 14pt Arial, sans-serif;
+            cursor: pointer;
         }
-        .title small {
+        .TopItem small {
             display: block;
             color: #3d4a52;
-            font-size: 11px;
+            font-size: 7.5pt;
             font-weight: normal;
         }
         #menuTree ul {
             list-style: none;
             margin: 0;
-            padding: 0 0 0 14px;
+            padding: 0 0 0 10px; /* one tg*.gif spacer per level */
         }
         #menuTree > ul {
             padding-left: 0;
         }
         #menuTree li {
-            margin: 1px 0;
+            white-space: nowrap;
         }
         #menuTree summary {
+            display: flex;
+            align-items: center;
+            min-height: 18px;
             cursor: pointer;
-            padding: 1px 0;
             list-style: none;
         }
         #menuTree summary::-webkit-details-marker {
             display: none;
         }
-        #menuTree summary::before {
-            content: "\25B8";
-            display: inline-block;
-            width: 12px;
-            color: #3d4a52;
-            transition: transform 0.12s ease;
+        #menuTree summary:hover span {
+            color: #f00;
         }
-        #menuTree details[open] > summary::before {
-            transform: rotate(90deg);
+        #menuTree img {
+            flex: none;
+            border: 0;
+            vertical-align: middle;
         }
-        #menuTree > ul > li > details > summary {
-            font-weight: bold;
+        #menuTree img.tog {
+            margin-right: 2px;
         }
+        #menuTree img.book {
+            margin-right: 2px;
+        }
+        /* Items line up with the text of their sibling sections (13px box + 2px). */
         #menuTree a {
-            color: #0033a0;
+            display: inline-block;
+            padding: 1px 0 1px 15px;
             text-decoration: none;
         }
-        #menuTree a:hover {
-            color: #cf0000;
-            text-decoration: underline;
-        }
-        #menuTree a[aria-current="page"] {
-            color: #cf0000;
-            font-weight: bold;
-        }
-        .tag {
-            margin-left: 4px;
-            padding: 0 5px;
-            border-radius: 8px;
-            background: #e6ecef;
-            color: #3d4a52;
-            font-size: 10px;
-            white-space: nowrap;
-        }
+        a.pdf, a.pdf:link, a.pdf:visited { color: #000; }
+        a.sup, a.sup:link, a.sup:visited { color: #009900; }
+        a.sb, a.sb:link, a.sb:visited { color: #333399; }
+        #menuTree a:hover { color: #f00; }
+        #menuTree a[aria-current="page"] { font-weight: bold; }
         a:focus-visible,
-        summary:focus-visible {
+        summary:focus-visible,
+        .TopItem:focus-visible {
             outline: 2px solid #cf0000;
             outline-offset: 1px;
-        }
-        @media (prefers-reduced-motion: reduce) {
-            #menuTree summary::before {
-                transition: none;
-            }
         }
     </style>
     <script>
@@ -103,12 +102,21 @@
             }
         }
 
-        // Called by the reset button in menu_search.html.
+        // Closes every section. Called by the RESET button (menu_search.html) and the title.
         function AllClose() {
             document.querySelectorAll("#menuTree details[open]").forEach(function (d) {
                 d.open = false;
             });
         }
+
+        // Swap the +/- box and open/closed book icons when a section opens or closes.
+        document.addEventListener("toggle", function (event) {
+            var details = event.target;
+            if (!details.matches || !details.matches("#menuTree details")) return;
+            details.querySelectorAll(":scope > summary > img[data-open]").forEach(function (img) {
+                img.src = img.getAttribute(details.open ? "data-open" : "data-closed");
+            });
+        }, true);
 
         // Plain left-clicks on a document link open it in the viewer; modified clicks
         // (new tab, etc.) keep the browser's default behaviour.
@@ -122,9 +130,9 @@
         });
     </script>
 </head>
-<body>
+<body class="tree">
     <div data-menu-search></div>
-    <h1 class="title">CAMRY <small>ACV30/31 &amp; MCV30 series · <!-- COUNT --> documents</small></h1>
+    <button type="button" class="TopItem" onclick="AllClose()" title="Close all sections">CAMRY <small>ACV30/31 &amp; MCV30 series · <!-- COUNT --> documents</small></button>
     <nav id="menuTree" aria-label="Manual contents">
         <ul>
 <!-- MENU -->

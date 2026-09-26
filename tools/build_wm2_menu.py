@@ -50,21 +50,45 @@ def esc(text):
     return html.escape((text or "").strip(), quote=True)
 
 
+# Folder ("book") icon colours from pdf.xml <color>, as in the original menu.
+BOOK_COLOURS = ["g", "y", "r", "p", "b", "lb"]
+
+
+def book_icon(node):
+    try:
+        index = int((node.findtext("color") or "-1").strip())
+    except ValueError:
+        return ""
+    if not 0 <= index < len(BOOK_COLOURS):  # -1 means "no book icon"
+        return ""
+    colour = BOOK_COLOURS[index]
+    if not os.path.exists(os.path.join(CONTENTS, "images", f"close_{colour}.gif")):
+        return ""
+    return f'<img class="book" src="images/close_{colour}.gif" data-open="images/open_{colour}.gif" data-closed="images/close_{colour}.gif" alt="">'
+
+
 def render(node, depth):
     pad = "  " * depth
     out = []
-    for child in node:
+    children = [c for c in node if c.tag in ("menu", "item")]
+    for i, child in enumerate(children):
+        n = 1 if i == len(children) - 1 else 2  # plas1/minas1 for the last child, plas2/minas2 otherwise
         if child.tag == "menu":
-            out.append(f"{pad}<li><details><summary>{esc(child.findtext('title'))}</summary>")
+            title = esc(child.findtext("title"))
+            out.append(f'{pad}<li><details><summary title="{title}">'
+                       f'<img class="tog" src="images/plas{n}.gif" data-open="images/minas{n}.gif" data-closed="images/plas{n}.gif" alt="">'
+                       f'{book_icon(child)}<span>{title}</span></summary>')
             out.append(f"{pad}  <ul>")
             out.extend(render(child, depth + 2))
             out.append(f"{pad}  </ul>")
             out.append(f"{pad}</details></li>")
-        elif child.tag == "item":
+        else:
             href = esc(resolve(child.findtext("url")))
-            tag = TAGS.get((child.findtext("datatype") or "").strip())
-            badge = f' <span class="tag">{tag}</span>' if tag else ""
-            out.append(f'{pad}<li><a href="{href}" target="pdf" data-doc>{esc(child.findtext("title"))}</a>{badge}</li>')
+            kind = (child.findtext("datatype") or "").strip()
+            cls = kind if kind in TAGS else "pdf"
+            hint = f' ({TAGS[kind].lower()})' if kind in TAGS else ""
+            title = esc(child.findtext("title"))
+            out.append(f'{pad}<li><a class="{cls}" href="{href}" target="pdf" title="{title}{hint}" data-doc>{title}</a></li>')
     return out
 
 
