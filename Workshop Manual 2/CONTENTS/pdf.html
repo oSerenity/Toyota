@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Style-Type" content="text/css">
   <link rel="stylesheet" type="text/css" href="disp.css">
-  <script language="JavaScript" src="sub.js"></script>
+  <script src="sub.js"></script>
   <title>CAMRY</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: url('background-image-url.png') no-repeat center center fixed;
-      background-size: cover;
       margin: 0;
       padding: 0;
       height: 100vh;
@@ -31,16 +30,16 @@
       border-radius: 10px;
     }
     .cartitle {
-      color: #CF0000;
+      color: #cf0000;
       font-size: 24px;
       font-weight: bold;
     }
     .footer {
       color: #000000;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       font-size: x-small;
       position: absolute;
-      bottom: 0px;
+      bottom: 0;
       right: 5px;
     }
     iframe {
@@ -56,7 +55,7 @@
       var vars = query.split("&");
       for (var i = 0; i < vars.length; i++) {
         var pair = vars[i].split("=");
-        if (pair[0] == variable) {
+        if (pair[0] === variable) {
           return decodeURIComponent(pair[1]);
         }
       }
@@ -66,14 +65,9 @@
     function loadPDF() {
       var pdfUrl = getQueryVariable("url");
       if (pdfUrl) {
-        var iframe = document.getElementById("pdfFrame");
-        iframe.src = pdfUrl;
-        iframe.style.display = "block"; // Show the iframe
-        document.querySelector('.container').style.display = 'none'; // Hide the initial content
+        openPDFInFrame(pdfUrl);
       }
     }
-
-    window.onload = loadPDF;
 
     function openPDFInFrame(url) {
       var iframe = document.getElementById("pdfFrame");
@@ -81,6 +75,8 @@
       iframe.style.display = "block"; // Show the iframe
       document.querySelector('.container').style.display = 'none'; // Hide the initial content
     }
+
+    window.addEventListener('load', loadPDF);
   </script>
 </head>
 <body class="bg01">
@@ -89,22 +85,21 @@
       <p class="cartitle">CAMRY PDF Manual</p>
       <table border="0" cellpadding="2" cellspacing="0" align="center">
         <tr>
-          <td valign="top"><font face="arial">Applicable models</font></td>
-          <td align="center" valign="top"><font face="arial"><b>:</b></font></td>
-          <td><font face="arial">ACV30, 31 series<br>MCV30 series</font></td>
+          <td valign="top">Applicable models</td>
+          <td align="center" valign="top"><b>:</b></td>
+          <td>ACV30, 31 series<br>MCV30 series</td>
         </tr>
       </table>
-      <p><font face="arial">Click the desired item from the pull down menu on the left.</font></p>
+      <p>Click the desired item from the pull down menu on the left.</p>
       <table border="0" cellpadding="2" cellspacing="0" align="center">
         <tr>
-          <td valign="top"><font face="arial">Note:</font></td>
-          <td><font face="arial">Please wait until the pull down menu is displayed.
-          <br></font></td>
+          <td valign="top">Note:</td>
+          <td>Please wait until the pull down menu is displayed.<br></td>
         </tr>
       </table>
     </div>
-    <iframe id="pdfFrame" src=""></iframe>
+    <iframe id="pdfFrame" src="" title="PDF viewer"></iframe>
   </div>
-  <p class="footer">Copyright ©2003-2004 Toyota Motor Corporation. All rights reserved.</p>
+  <p class="footer">Copyright &copy; 2003-2004 Toyota Motor Corporation. All rights reserved.</p>
 </body>
 </html>

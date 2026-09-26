@@ -3,36 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAMRY</title>
+    <title>Toyota 2006 Camry — Repair Manual</title>
     <link rel="stylesheet" href="./images/core_tcm.css">
     <script src="./images/menu_tcm.js" defer></script>
     <style>
-        body, html {
+        html, body {
             margin: 0;
-            padding: 0;
             height: 100%;
-            overflow: hidden;
         }
-        #container {
+        .viewer {
             display: flex;
+            flex-wrap: wrap;
             height: 100vh;
-            width: 100vw;
+            width: 100%;
         }
-        #menu {
-            width: 28%;
+        .viewer__menu {
+            flex: 0 0 300px;
+            max-width: 100%;
             height: 100%;
-            border-left: 8px solid #FFFFFF;
+            border: 0;
+            border-right: 1px solid #c3c3c3;
         }
-        #content {
-            width: 80%;
+        .viewer__content {
+            flex: 1 1 400px;
             height: 100%;
+            border: 0;
+        }
+        @media (max-width: 700px) {
+            .viewer {
+                flex-direction: column;
+                height: auto;
+            }
+            .viewer__menu,
+            .viewer__content {
+                flex: none;
+                width: 100%;
+                height: 50vh;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <iframe id="menu" src="menu_camry.html" name="menu" frameborder="0"></iframe>
-        <iframe id="content" src="./01/20545/intrinf4.pdf" name="RIGHT" frameborder="0"></iframe>
+    <div class="viewer">
+        <iframe class="viewer__menu" src="menu_camry.html" name="menu" title="Repair manual navigation menu"></iframe>
+        <iframe class="viewer__content" src="./01/20545/intrinf4.pdf" name="RIGHT" title="Repair manual viewer"></iframe>
     </div>
 </body>
 </html>
