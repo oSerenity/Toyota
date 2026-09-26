@@ -204,6 +204,17 @@
             parent.location.href = "./menu2.html"
         }
 
+        // The viewer lives in the sibling "pdf" frame (pdf.html); forward menu
+        // clicks to it. If the menu is opened on its own, open the PDF directly.
+        function openPDFInFrame(url) {
+            var viewer = parent && parent !== window && parent.frames ? parent.frames["pdf"] : null;
+            if (viewer && typeof viewer.openPDFInFrame === "function") {
+                viewer.openPDFInFrame(url);
+            } else {
+                window.open(url, "_blank");
+            }
+        }
+
         function getParamValue(sGetString, sParamName) {
             var sValue = "";
 
